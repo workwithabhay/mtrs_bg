@@ -1,5 +1,5 @@
-import express, { type Application } from 'express';
-import helmet from 'helmet';
+import express, { type Application, type RequestHandler } from 'express';
+import helmet, { type HelmetOptions } from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { corsOptions } from './config/cors.js';
@@ -9,6 +9,14 @@ import { csrfProtection } from './common/middleware/csrf.js';
 import { notFoundHandler } from './common/middleware/not-found.js';
 import { errorHandler } from './common/middleware/error-handler.js';
 import { rootRouter } from './routes/index.js';
+
+// Resolve Helmet callable signature across TypeScript NodeNext and CJS/ESM interop
+type HelmetFunction = (options?: Readonly<HelmetOptions>) => RequestHandler;
+const helmetMiddleware = (
+  typeof helmet === 'function'
+    ? helmet
+    : (helmet as unknown as { default: unknown }).default
+) as HelmetFunction;
 
 export function createApp(): Application {
   const app = express();
@@ -21,7 +29,7 @@ export function createApp(): Application {
 
   // 3. Security headers
   app.use(
-    helmet({
+    helmetMiddleware({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
