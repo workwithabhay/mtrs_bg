@@ -13,6 +13,20 @@ import { qrRedirectRouter } from './qr-redirect.routes.js';
 
 export const rootRouter = Router();
 
+// Root route for base URL status check
+rootRouter.get('/', (_req, res) => {
+  res.json({
+    status: 'online',
+    service: 'Review Management SaaS API',
+    version: '0.1.0',
+    endpoints: {
+      health: '/api/health',
+      ready: '/api/ready',
+      apiV1: '/api/v1',
+    },
+  });
+});
+
 // Liveness & readiness probes
 rootRouter.use('/api', healthRouter);
 
