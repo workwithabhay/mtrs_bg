@@ -18,7 +18,7 @@ rootRouter.get('/', (_req, res) => {
   res.json({
     status: 'online',
     service: 'Review Management SaaS API',
-    version: '0.1.1',
+    version: '0.1.0',
     endpoints: {
       health: '/api/health',
       ready: '/api/ready',

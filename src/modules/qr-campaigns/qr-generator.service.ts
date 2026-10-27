@@ -3,6 +3,18 @@ import PDFDocument from 'pdfkit';
 import { env } from '../../config/env.js';
 import type { IQrCampaignDocument } from './models/qr-campaign.model.js';
 
+const PDFDoc = (
+  typeof PDFDocument === 'function'
+    ? PDFDocument
+    : (PDFDocument as unknown as { default: typeof PDFDocument }).default
+);
+
+const qr = (
+  typeof qrcode === 'object' && qrcode !== null && 'toBuffer' in qrcode
+    ? qrcode
+    : (qrcode as unknown as { default: typeof qrcode }).default
+);
+
 export class QrGeneratorService {
   /**
    * Builds the stable, fully qualified public customer landing page URL.
@@ -17,7 +29,7 @@ export class QrGeneratorService {
   async generatePng(campaign: IQrCampaignDocument): Promise<Buffer> {
     const url = this.getPublicCampaignUrl(campaign.publicToken);
 
-    return qrcode.toBuffer(url, {
+    return qr.toBuffer(url, {
       type: 'png',
       errorCorrectionLevel: 'M',
       margin: 2,
@@ -35,7 +47,7 @@ export class QrGeneratorService {
   async generateSvg(campaign: IQrCampaignDocument): Promise<string> {
     const url = this.getPublicCampaignUrl(campaign.publicToken);
 
-    return qrcode.toString(url, {
+    return qr.toString(url, {
       type: 'svg',
       errorCorrectionLevel: 'M',
       margin: 2,
@@ -53,7 +65,7 @@ export class QrGeneratorService {
     const qrPngBuffer = await this.generatePng(campaign);
 
     return new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({
+      const doc = new PDFDoc({
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
       });

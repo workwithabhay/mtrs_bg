@@ -2,11 +2,17 @@ import multer from 'multer';
 import { env } from '../../config/env.js';
 import { ValidationError } from '../errors/app-error.js';
 
-const storage = multer.memoryStorage();
+const multerFn = (
+  typeof multer === 'function'
+    ? multer
+    : (multer as unknown as { default: typeof multer }).default
+);
+
+const storage = multerFn.memoryStorage();
 
 const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
-export const uploadLogoMiddleware = multer({
+export const uploadLogoMiddleware = multerFn({
   storage,
   limits: {
     fileSize: env.MAX_UPLOAD_SIZE_BYTES, // 2MB

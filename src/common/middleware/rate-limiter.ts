@@ -1,8 +1,22 @@
-import rateLimit from 'express-rate-limit';
+import type { Request, Response, RequestHandler } from 'express';
+import rateLimitDefault, {
+  rateLimit as namedRateLimit,
+  type Options as RateLimitOptions,
+} from 'express-rate-limit';
 import { env } from '../../config/env.js';
 import { HttpStatus } from '../constants/http-status.js';
 import { ErrorCode } from '../errors/error-codes.js';
 import { sendError } from '../utils/response.js';
+
+// Resolve express-rate-limit callable signature across TypeScript NodeNext and CJS/ESM interop
+type RateLimiterFn = (options?: Partial<RateLimitOptions>) => RequestHandler;
+const rateLimit: RateLimiterFn = (
+  typeof namedRateLimit === 'function'
+    ? namedRateLimit
+    : typeof rateLimitDefault === 'function'
+      ? rateLimitDefault
+      : (rateLimitDefault as unknown as { default: RateLimiterFn }).default
+) as RateLimiterFn;
 
 const isTestEnv = env.NODE_ENV === 'test';
 
@@ -11,7 +25,7 @@ export const otpRequestLimiter = rateLimit({
   max: isTestEnv ? 1000 : 10, // 10 OTP requests per window
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -26,7 +40,7 @@ export const otpVerifyLimiter = rateLimit({
   max: isTestEnv ? 1000 : 15, // 15 verification attempts per window
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -41,7 +55,7 @@ export const publicScanLimiter = rateLimit({
   max: isTestEnv ? 1000 : 60, // 60 scan requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -56,7 +70,7 @@ export const publicFeedbackLimiter = rateLimit({
   max: isTestEnv ? 1000 : 10, // 10 feedback submissions per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -71,7 +85,7 @@ export const publicReviewClickLimiter = rateLimit({
   max: isTestEnv ? 1000 : 30, // 30 click events per window per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -86,7 +100,7 @@ export const publicAiAssistanceLimiter = rateLimit({
   max: isTestEnv ? 1000 : 15, // 15 AI assistance requests per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -101,7 +115,7 @@ export const dashboardLimiter = rateLimit({
   max: isTestEnv ? 1000 : 120, // 120 requests per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -116,7 +130,7 @@ export const billingLimiter = rateLimit({
   max: isTestEnv ? 1000 : 60, // 60 billing requests per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -131,7 +145,7 @@ export const adminLimiter = rateLimit({
   max: isTestEnv ? 1000 : 120, // 120 requests per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     sendError(
       res,
       ErrorCode.RATE_LIMIT_EXCEEDED,
