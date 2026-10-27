@@ -1,6 +1,6 @@
 {
   "name": "review-saas-backend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Production-Ready Multi-Tenant Review Management SaaS Backend",
   "main": "dist/server.js",
