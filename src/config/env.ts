@@ -39,7 +39,14 @@ const envSchema = z
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.coerce.number().int().positive().default(5050),
     APP_BASE_URL: z.string().url().default('http://localhost:5050'),
-    PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
+    PUBLIC_APP_URL: z
+      .string()
+      .url()
+      .default(
+        process.env.NODE_ENV === 'production'
+          ? 'https://mtrs-fn.vercel.app'
+          : 'http://localhost:3000',
+      ),
     CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:3001,http://localhost:5173,https://mtrs-fn.vercel.app'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/review_saas'),

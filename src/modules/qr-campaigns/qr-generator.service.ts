@@ -20,7 +20,8 @@ export class QrGeneratorService {
    * Builds the stable, fully qualified public customer landing page URL.
    */
   getPublicCampaignUrl(publicToken: string): string {
-    return `${env.PUBLIC_APP_URL}/qr/${publicToken}`;
+    const base = env.PUBLIC_APP_URL.trim().replace(/\/+$/, '');
+    return `${base}/qr/${publicToken}`;
   }
 
   /**
