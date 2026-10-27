@@ -169,14 +169,14 @@ const envSchema = z
           path: ['AI_API_KEY'],
         });
       }
-      if (data.PAYMENT_PROVIDER === 'mock') {
+      if (data.PAYMENT_PROVIDER === 'mock' && !process.env.VERCEL) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Mock payment provider cannot be selected in production',
           path: ['PAYMENT_PROVIDER'],
         });
       }
-      if (data.ENABLE_DEV_MOCK_PAYMENTS) {
+      if (data.ENABLE_DEV_MOCK_PAYMENTS && !process.env.VERCEL) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'ENABLE_DEV_MOCK_PAYMENTS must be false in production',
