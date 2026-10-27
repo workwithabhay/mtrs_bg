@@ -13,13 +13,13 @@ import { setCsrfCookie } from '../../common/middleware/csrf.js';
 import { env } from '../../config/env.js';
 import type { CookieOptions } from 'express';
 
-const sessionCookieOptions: CookieOptions = {
+export const getSessionCookieOptions = (): CookieOptions => ({
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
   path: '/',
   maxAge: env.SESSION_TTL_HOURS * 60 * 60 * 1000,
-};
+});
 
 export class AuthController {
   async signupRequestOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -46,8 +46,10 @@ export class AuthController {
         sessionMeta,
       );
 
+      const cookieOpts = getSessionCookieOptions();
+
       // Set HTTP-only session cookie
-      res.cookie(SESSION_COOKIE_NAME, rawSessionToken, sessionCookieOptions);
+      res.cookie(SESSION_COOKIE_NAME, rawSessionToken, cookieOpts);
 
       // Set readable CSRF token cookie
       setCsrfCookie(res, csrfToken);
@@ -57,6 +59,7 @@ export class AuthController {
         {
           user,
           business,
+          token: rawSessionToken,
         },
         HttpStatus.CREATED,
       );
@@ -89,7 +92,8 @@ export class AuthController {
         sessionMeta,
       );
 
-      res.cookie(SESSION_COOKIE_NAME, rawSessionToken, sessionCookieOptions);
+      const cookieOpts = getSessionCookieOptions();
+      res.cookie(SESSION_COOKIE_NAME, rawSessionToken, cookieOpts);
       setCsrfCookie(res, csrfToken);
 
       sendSuccess(
@@ -97,6 +101,7 @@ export class AuthController {
         {
           user,
           business,
+          token: rawSessionToken,
         },
         HttpStatus.OK,
       );
@@ -132,8 +137,13 @@ export class AuthController {
         await authService.logout(req.session);
       }
 
-      res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
-      res.clearCookie('csrf_token', { path: '/' });
+      const cookieOpts = getSessionCookieOptions();
+      res.clearCookie(SESSION_COOKIE_NAME, cookieOpts);
+      res.clearCookie('csrf_token', {
+        path: '/',
+        secure: env.NODE_ENV === 'production',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+      });
 
       sendSuccess(res, { message: 'Successfully logged out.' }, HttpStatus.OK);
     } catch (err) {
@@ -147,8 +157,13 @@ export class AuthController {
         await authService.logoutAll(req.user._id);
       }
 
-      res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
-      res.clearCookie('csrf_token', { path: '/' });
+      const cookieOpts = getSessionCookieOptions();
+      res.clearCookie(SESSION_COOKIE_NAME, cookieOpts);
+      res.clearCookie('csrf_token', {
+        path: '/',
+        secure: env.NODE_ENV === 'production',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+      });
 
       sendSuccess(
         res,

@@ -15,7 +15,7 @@ export function setCsrfCookie(res: Response, token: string): void {
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: false, // Must be accessible to JavaScript frontend so it can read and send in header
     secure: env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
     maxAge: env.SESSION_TTL_HOURS * 60 * 60 * 1000,
   });
