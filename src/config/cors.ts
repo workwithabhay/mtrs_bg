@@ -1,9 +1,18 @@
 import type { CorsOptions } from 'cors';
 import { env } from './env.js';
 
-const allowedOrigins = env.CORS_ORIGIN.split(',')
-  .map((origin) => origin.trim())
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'https://mtrs-fn.vercel.app',
+];
+
+const configuredOrigins = env.CORS_ORIGIN.split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...configuredOrigins]));
 
 export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -12,7 +21,14 @@ export const corsOptions: CorsOptions = {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    const normalizedOrigin = origin.trim().replace(/\/$/, '');
+
+    // Allow configured origins, wildcard, or any mtrs Vercel deployments
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      allowedOrigins.includes('*') ||
+      /^https:\/\/mtrs(-[a-z0-9-]+)?\.vercel\.app$/.test(normalizedOrigin)
+    ) {
       return callback(null, true);
     }
 
