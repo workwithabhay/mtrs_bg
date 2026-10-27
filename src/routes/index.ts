@@ -27,6 +27,22 @@ rootRouter.get('/', (_req, res) => {
   });
 });
 
+// Top-level direct health probe for browser access and monitors
+rootRouter.get('/health', (_req, res) => {
+  res.json({
+    success: true,
+    data: {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+      environment: process.env.NODE_ENV || 'development',
+    },
+    meta: {
+      version: '0.1.0',
+    },
+  });
+});
+
 // Liveness & readiness probes
 rootRouter.use('/api', healthRouter);
 

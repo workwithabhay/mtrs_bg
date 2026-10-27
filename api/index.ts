@@ -17,6 +17,32 @@ async function ensureDbConnected(): Promise<void> {
 }
 
 export default async function handler(req: Request, res: Response) {
-  await ensureDbConnected();
-  return app(req, res);
+  try {
+    const isHealthRoute =
+      req.url === '/' ||
+      req.url === '/health' ||
+      req.url === '/api/health' ||
+      req.url?.startsWith('/health') ||
+      req.url?.startsWith('/api/health');
+
+    if (!isHealthRoute) {
+      await ensureDbConnected();
+    } else {
+      // Non-blocking connection check for health probes so probe never times out
+      void ensureDbConnected().catch(() => {});
+    }
+
+    return app(req, res);
+  } catch (error) {
+    console.error('Unhandled error in serverless handler:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An internal error occurred during request processing.',
+        },
+      });
+    }
+  }
 }

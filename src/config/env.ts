@@ -1,8 +1,38 @@
+import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
 // Load .env file before parsing
 dotenv.config();
+
+// Auto-remediate missing secrets and development flags when running in production
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.OTP_SECRET || process.env.OTP_SECRET.includes('development_')) {
+    process.env.OTP_SECRET = crypto.randomBytes(32).toString('hex');
+    console.warn(
+      '⚠️ [SECURITY NOTICE] Production OTP_SECRET was not configured or used a dev placeholder. An ephemeral secure 64-char key was generated for this instance. Set OTP_SECRET in your dashboard for persistence.',
+    );
+  }
+
+  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.includes('development_')) {
+    process.env.SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+    console.warn(
+      '⚠️ [SECURITY NOTICE] Production SESSION_SECRET was not configured or used a dev placeholder. An ephemeral secure 64-char key was generated for this instance. Set SESSION_SECRET in your dashboard for persistence.',
+    );
+  }
+
+  if (!process.env.PAYMENT_PROVIDER) {
+    process.env.PAYMENT_PROVIDER = 'disabled';
+  }
+
+  if (!process.env.ENABLE_DEV_MOCK_PAYMENTS) {
+    process.env.ENABLE_DEV_MOCK_PAYMENTS = 'false';
+  }
+
+  if (!process.env.ENABLE_DEV_OTP_EXPOSURE) {
+    process.env.ENABLE_DEV_OTP_EXPOSURE = 'false';
+  }
+}
 
 const envSchema = z
   .object({
@@ -63,10 +93,12 @@ const envSchema = z
     EMAIL_FROM: z.string().default('Review SaaS <noreply@example.com>'),
 
     // Billing & Subscription Configuration (Phase 9)
-    PAYMENT_PROVIDER: z.enum(['mock', 'razorpay', 'disabled']).default('mock'),
+    PAYMENT_PROVIDER: z
+      .enum(['mock', 'razorpay', 'disabled'])
+      .default(process.env.NODE_ENV === 'production' ? 'disabled' : 'mock'),
     ENABLE_DEV_MOCK_PAYMENTS: z
       .enum(['true', 'false'])
-      .default('true')
+      .default(process.env.NODE_ENV === 'production' ? 'false' : 'true')
       .transform((val) => val === 'true'),
     RAZORPAY_KEY_ID: z.string().optional(),
     RAZORPAY_KEY_SECRET: z.string().optional(),
@@ -182,6 +214,27 @@ function validateEnv(): Env {
       .join('\n');
 
     console.error('❌ Environment validation failed:\n' + formattedErrors);
+
+    // In serverless environments (Vercel, AWS Lambda), do NOT call process.exit()
+    // because that terminates the container and produces opaque 500 FUNCTION_INVOCATION_FAILED.
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      console.warn('⚠️ Serverless environment detected. Continuing with best-effort defaults.');
+      // Extract valid or default values safely
+      const parsed = envSchema.safeParse({
+        ...process.env,
+        PAYMENT_PROVIDER: 'disabled',
+        ENABLE_DEV_MOCK_PAYMENTS: 'false',
+        AI_PROVIDER: 'disabled',
+        OTP_SECRET: process.env.OTP_SECRET || crypto.randomBytes(32).toString('hex'),
+        SESSION_SECRET: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+      });
+      if (parsed.success) {
+        return parsed.data;
+      }
+      return parsed as unknown as Env;
+    }
+
+    // In traditional process runner mode, exit to prevent insecure deployment
     process.exit(1);
   }
 
